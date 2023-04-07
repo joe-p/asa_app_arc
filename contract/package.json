@@ -1,0 +1,15 @@
+{
+  "name": "contract",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsx ../node_modules/@algorandfoundation/tealscript/src/bin/tealscript.ts token_metadata.algo.ts artifacts"
+  },
+  "dependencies": {
+    "@algorandfoundation/tealscript": "git+https://github.com/algorand-devrel/tealscript#64d2fd4",
+    "typescript": "^5.0.4"
+  },
+  "devDependencies": {
+    "tsx": "^3.12.6"
+  }
+}

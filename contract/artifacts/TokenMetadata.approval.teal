@@ -1,0 +1,181 @@
+#pragma version 8
+	b main
+
+abi_route_updateMetadataEntry:
+	txn OnCompletion
+	int NoOp
+	==
+	txn ApplicationID
+	int 0
+	!=
+	&&
+	assert
+	byte 0x
+	pop
+	txna ApplicationArgs 3
+	btoi
+	txnas Assets
+	txna ApplicationArgs 2
+	extract 2 0
+	txna ApplicationArgs 1
+	extract 2 0
+	callsub updateMetadataEntry
+	int 1
+	return
+
+updateMetadataEntry:
+	proto 3 0
+
+	// token_metadata.algo.ts:10
+	// assert(this.txn.sender === asa.manager)
+	txn Sender
+	frame_dig -3 // asa: asset
+	asset_params_get AssetManager
+	assert
+	==
+	assert
+
+	// token_metadata.algo.ts:11
+	// this.metadataEntry.put(concat(ARC_STRING, key), value)
+	byte "ARCXXXX"
+	frame_dig -1 // key: bytes
+	concat
+	dup
+	box_del
+	pop
+	frame_dig -2 // value: bytes
+	box_put
+	retsub
+
+abi_route_deleteMetadataEntry:
+	txn OnCompletion
+	int NoOp
+	==
+	txn ApplicationID
+	int 0
+	!=
+	&&
+	assert
+	byte 0x
+	pop
+	txna ApplicationArgs 2
+	btoi
+	txnas Assets
+	txna ApplicationArgs 1
+	extract 2 0
+	callsub deleteMetadataEntry
+	int 1
+	return
+
+deleteMetadataEntry:
+	proto 2 0
+
+	// token_metadata.algo.ts:15
+	// assert(this.txn.sender === asa.manager)
+	txn Sender
+	frame_dig -2 // asa: asset
+	asset_params_get AssetManager
+	assert
+	==
+	assert
+
+	// token_metadata.algo.ts:16
+	// this.metadataEntry.delete(concat(ARC_STRING, key))
+	byte "ARCXXXX"
+	frame_dig -1 // key: bytes
+	concat
+	box_del
+	retsub
+
+abi_route_reclaimALGOs:
+	txn OnCompletion
+	int NoOp
+	==
+	txn ApplicationID
+	int 0
+	!=
+	&&
+	assert
+	byte 0x
+	pop
+	txna ApplicationArgs 1
+	btoi
+	txnas Assets
+	callsub reclaimALGOs
+	int 1
+	return
+
+reclaimALGOs:
+	proto 1 0
+
+	// token_metadata.algo.ts:20
+	// assert(this.txn.sender === asa.manager)
+	txn Sender
+	frame_dig -1 // asa: asset
+	asset_params_get AssetManager
+	assert
+	==
+	assert
+
+	// token_metadata.algo.ts:21
+	// sendPayment({
+	itxn_begin
+	int pay
+	itxn_field TypeEnum
+
+	// token_metadata.algo.ts:22
+	// sender: this.app.address
+	txna Applications 0
+	app_params_get AppAddress
+	assert
+	itxn_field Sender
+
+	// token_metadata.algo.ts:23
+	// receiver: asa.manager
+	frame_dig -1 // asa: asset
+	asset_params_get AssetManager
+	assert
+	itxn_field Receiver
+
+	// token_metadata.algo.ts:24
+	// amount: this.app.address.balance - this.app.address.minBalance
+	txna Applications 0
+	app_params_get AppAddress
+	assert
+	acct_params_get AcctBalance
+	assert
+	txna Applications 0
+	app_params_get AppAddress
+	assert
+	acct_params_get AcctMinBalance
+	assert
+	-
+	itxn_field Amount
+
+	// token_metadata.algo.ts:25
+	// fee: 0
+	int 0
+	itxn_field Fee
+	itxn_submit
+	retsub
+
+main:
+	txn NumAppArgs
+	bnz route_abi
+
+	// default createApplication
+	txn ApplicationID
+	int 0
+	==
+	txn OnCompletion
+	int NoOp
+	==
+	&&
+	return
+
+route_abi:
+	method "updateMetadataEntry(byte[],byte[],asset)void"
+	method "deleteMetadataEntry(byte[],asset)void"
+	method "reclaimALGOs(asset)void"
+	txna ApplicationArgs 0
+	match abi_route_updateMetadataEntry abi_route_deleteMetadataEntry abi_route_reclaimALGOs

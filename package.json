@@ -1,0 +1,10 @@
+{
+  "name": "asa_app_arc",
+  "version": "0.0.0",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "contract",
+    "sdk"
+  ]
+}

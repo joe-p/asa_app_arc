@@ -1,0 +1,66 @@
+{
+  "name": "TokenMetadata",
+  "desc": "",
+  "methods": [
+    {
+      "name": "updateMetadataEntry",
+      "args": [
+        {
+          "name": "key",
+          "type": "byte[]",
+          "desc": ""
+        },
+        {
+          "name": "value",
+          "type": "byte[]",
+          "desc": ""
+        },
+        {
+          "name": "asa",
+          "type": "asset",
+          "desc": ""
+        }
+      ],
+      "desc": "",
+      "returns": {
+        "type": "void",
+        "desc": ""
+      }
+    },
+    {
+      "name": "deleteMetadataEntry",
+      "args": [
+        {
+          "name": "key",
+          "type": "byte[]",
+          "desc": ""
+        },
+        {
+          "name": "asa",
+          "type": "asset",
+          "desc": ""
+        }
+      ],
+      "desc": "",
+      "returns": {
+        "type": "void",
+        "desc": ""
+      }
+    },
+    {
+      "name": "reclaimALGOs",
+      "args": [
+        {
+          "name": "asa",
+          "type": "asset",
+          "desc": ""
+        }
+      ],
+      "desc": "",
+      "returns": {
+        "type": "void",
+        "desc": ""
+      }
+    }
+  ]
+}

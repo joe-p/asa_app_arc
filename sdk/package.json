@@ -1,0 +1,22 @@
+{
+  "name": "sdk",
+  "version": "0.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "generate": "beaker generate ../contract/artifacts/TokenMetadata.json src/"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.57.1",
+    "@typescript-eslint/parser": "^5.57.1",
+    "beaker-ts": "^0.1.2",
+    "eslint": "^7.32.0 || ^8.2.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.25.2",
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "algosdk": "^2.2.0",
+    "buffer": "^6.0.3"
+  }
+}
