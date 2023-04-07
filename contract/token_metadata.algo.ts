@@ -10,9 +10,18 @@ class TokenMetadata extends Contract {
   private verifyOrSetASA(asa: Asset): void {
     if (this.asa.exists()) {
       assert(this.asa.get() === asa);
-    } this.asa.put(asa)
+    } else {
+      assert(this.txn.sender === this.app.creator)
+      this.asa.put(asa)
+    }
 
     assert(this.txn.sender === this.asa.get().manager);
+  }
+
+  updateMetadataEntry(key: bytes, value: bytes, asa: Asset): void {
+    this.verifyOrSetASA(asa);
+
+    this.metadataEntry.put(concat(ARC_STRING, key), value);
   }
 
   updateMetadataEntries(keys: StaticArray<string, 8>, values: StaticArray<string, 8>, asa: Asset): void {
@@ -22,12 +31,6 @@ class TokenMetadata extends Contract {
       if (values[i] === '') return
       this.updateMetadataEntry(keys[i], values[i], asa);
     }
-  }
-
-  updateMetadataEntry(key: bytes, value: bytes, asa: Asset): void {
-    this.verifyOrSetASA(asa);
-
-    this.metadataEntry.put(concat(ARC_STRING, key), value);
   }
 
   deleteMetadataEntry(key: bytes, asa: Asset): void {

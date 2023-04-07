@@ -28,6 +28,31 @@
       }
     },
     {
+      "name": "updateMetadataEntries",
+      "args": [
+        {
+          "name": "keys",
+          "type": "string[8]",
+          "desc": ""
+        },
+        {
+          "name": "values",
+          "type": "string[8]",
+          "desc": ""
+        },
+        {
+          "name": "asa",
+          "type": "asset",
+          "desc": ""
+        }
+      ],
+      "desc": "",
+      "returns": {
+        "type": "void",
+        "desc": ""
+      }
+    },
+    {
       "name": "deleteMetadataEntry",
       "args": [
         {
