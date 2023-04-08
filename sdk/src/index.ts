@@ -63,6 +63,15 @@ export async function createAsset(
   return (await algodClient.pendingTransactionInformation(results.txIDs[0]).do())['asset-index'];
 }
 
+function sliceIntoChunks(array: string[], chunkSize: number) {
+  const chunks = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+
+  return chunks;
+}
+
 export async function createMetadataEntries(
   sender: string,
   signer: algosdk.TransactionSigner,
@@ -91,30 +100,34 @@ export async function createMetadataEntries(
 
   atc.addTransaction({ txn: appFundTxn, signer });
 
-  const keys = new Array(4).fill('');
-  const values = new Array(4).fill('');
+  sliceIntoChunks(Object.keys(extraMetadata), 4).forEach((keysChunk) => {
+    const keys = new Array(4).fill('');
+    const values = new Array(4).fill('');
 
-  Object.values(extraMetadata).forEach((v, i) => { values[i] = v; });
-  Object.keys(extraMetadata).forEach((v, i) => { keys[i] = v; });
+    keysChunk.forEach((k, i) => {
+      values[i] = extraMetadata[k];
+      keys[i] = k;
+    });
 
-  const boxes: algosdk.BoxReference[] = Object.keys(extraMetadata).map((k) => {
-    const nameString = ARC_STRING + k;
-    const name = new Uint8Array(Buffer.from(nameString, 'utf-8'));
+    const boxes: algosdk.BoxReference[] = keysChunk.map((k) => {
+      const nameString = ARC_STRING + k;
+      const name = new Uint8Array(Buffer.from(nameString, 'utf-8'));
 
-    return {
-      name,
-      appIndex: appClient.appId,
-    };
-  });
+      return {
+        name,
+        appIndex: appClient.appId,
+      };
+    });
 
-  atc.addMethodCall({
-    appID: appClient.appId,
-    method: algosdk.getMethodByName(appClient.methods, 'updateMetadataEntries'),
-    sender,
-    signer,
-    suggestedParams,
-    methodArgs: [keys, values, assetID],
-    boxes,
+    atc.addMethodCall({
+      appID: appClient.appId,
+      method: algosdk.getMethodByName(appClient.methods, 'updateMetadataEntries'),
+      sender,
+      signer,
+      suggestedParams,
+      methodArgs: [keys, values, assetID],
+      boxes,
+    });
   });
 
   await atc.execute(algodClient, 3);

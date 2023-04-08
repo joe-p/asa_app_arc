@@ -98,4 +98,27 @@ describe('SDK', function () {
 
     expect(JSON.parse(Buffer.from(value).toString())).to.deep.equal(jsonData);
   });
+
+  it('60 properties', async function () {
+    const metadata: Record<string, string> = {};
+    Array.from(Array(60).keys()).forEach((n) => { metadata[n.toString()] = `value ${n}`; });
+
+    const { appID } = await createAssetWithExtraMetadata(
+      sender,
+      signer,
+      algodClient,
+      createFields,
+      metadata,
+    );
+
+    const boxes = (await algodClient.getApplicationBoxes(appID).do())
+      .boxes.map((b) => Buffer.from(b.name).toString());
+
+    expect(boxes.sort()).to.deep.equal(Object.keys(metadata).map((k) => `${ARC_STRING}${k}`).sort());
+
+    boxes.forEach(async (key) => {
+      const { value } = await algodClient.getApplicationBoxByName(appID, new Uint8Array(Buffer.from(`${ARC_STRING}${key}`))).do();
+      expect(value).to.equal(`value ${key}`);
+    });
+  });
 });
