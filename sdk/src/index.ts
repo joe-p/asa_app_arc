@@ -21,15 +21,11 @@ type CreateFields = {
     freeze?: string
 }
 
-export async function mintAsset(
+export async function createApp(
+  algodClient: algosdk.Algodv2,
   sender: string,
   signer: algosdk.TransactionSigner,
-  algodClient: algosdk.Algodv2,
-  fields: CreateFields,
-  extraMetadata: Record<string, string> = {},
-): Promise<{appID: number, assetID: number}> {
-  const suggestedParams = fields.suggestedParams || await algodClient.getTransactionParams().do();
-
+): Promise<TokenMetadata> {
   const appClient = new TokenMetadata({
     client: algodClient,
     sender,
@@ -38,8 +34,21 @@ export async function mintAsset(
 
   await appClient.createApplication();
 
+  return appClient;
+}
+
+export async function createAsset(
+  sender: string,
+  signer: algosdk.TransactionSigner,
+  algodClient: algosdk.Algodv2,
+  appClient: TokenMetadata,
+  fields: CreateFields,
+): Promise<number> {
+  const suggestedParams = fields.suggestedParams || await algodClient.getTransactionParams().do();
+
   const assetCreateTxn = algosdk.makeAssetCreateTxnWithSuggestedParamsFromObject({
     ...fields,
+    from: sender,
     suggestedParams,
     defaultFrozen: fields.defaultFrozen || false,
     assetURL: `${ARC_STRING}-${appClient.appId}`,
@@ -51,9 +60,19 @@ export async function mintAsset(
 
   const results = await asaATC.execute(algodClient, 3);
 
-  const assetID = (await algodClient.pendingTransactionInformation(results[0].txId).do())['asset-index'];
+  return (await algodClient.pendingTransactionInformation(results[0].txId).do())['asset-index'];
+}
 
+export async function createMetadataEntries(
+  sender: string,
+  signer: algosdk.TransactionSigner,
+  appClient: TokenMetadata,
+  algodClient: algosdk.Algodv2,
+  assetID: number,
+  extraMetadata: Record<string, string>,
+) {
   const atc = new AtomicTransactionComposer();
+  const suggestedParams = await algodClient.getTransactionParams().do();
 
   const numBoxes = Object.keys(extraMetadata).length;
   let totalSize = 0;
@@ -70,7 +89,6 @@ export async function mintAsset(
     amount: numBoxes * BOX_CREATE_COST + totalSize * BOX_BYTE_COST,
   });
 
-  atc.addTransaction({ txn: assetCreateTxn, signer });
   atc.addTransaction({ txn: appFundTxn, signer });
 
   atc.addMethodCall({
@@ -79,7 +97,7 @@ export async function mintAsset(
     sender,
     signer,
     suggestedParams,
-    methodArgs: [Object.keys, Object.values, assetID],
+    methodArgs: [Object.keys(extraMetadata), Object.values(extraMetadata), assetID],
     boxes: Object.keys(extraMetadata).map((k) => ({
       appIndex: 0,
       name: new Uint8Array(Buffer.from(ARC_STRING + k)),
@@ -87,6 +105,20 @@ export async function mintAsset(
   });
 
   await atc.execute(algodClient, 3);
+}
+
+export async function createAssetWithExtraMetadata(
+  sender: string,
+  signer: algosdk.TransactionSigner,
+  algodClient: algosdk.Algodv2,
+  fields: CreateFields,
+  extraMetadata: Record<string, string> = {},
+): Promise<{appID: number, assetID: number}> {
+  const appClient = await createApp(algodClient, sender, signer);
+
+  const assetID = await createAsset(sender, signer, algodClient, appClient, fields);
+
+  await createMetadataEntries(sender, signer, appClient, algodClient, assetID, extraMetadata);
 
   return { appID: appClient.appId, assetID };
 }
