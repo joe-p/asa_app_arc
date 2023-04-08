@@ -6,7 +6,7 @@ import { TransactionSigner } from 'algosdk';
 import { sandbox, clients } from 'beaker-ts';
 import { Buffer } from 'buffer';
 import {
-  createApp, createAsset, createMetadataEntries, getMetadataField,
+  createApp, createAsset, createMetadataEntries, getMetadataField, createAssetWithExtraMetadata,
 } from '../src/index';
 import { TokenMetadata } from '../src/tokenmetadata_client';
 
@@ -16,6 +16,15 @@ let sender: string;
 let signer: TransactionSigner;
 let appClient: TokenMetadata;
 let assetID: number;
+let createFields: {
+  total: number
+  decimals: number
+  unitName: string
+  assetName: string
+  from: string
+  manager: string
+};
+
 const algodClient = clients.sandboxAlgod();
 
 describe('SDK', function () {
@@ -23,6 +32,14 @@ describe('SDK', function () {
     const acct = (await sandbox.getAccounts())[0];
     sender = acct.addr;
     signer = acct.signer;
+    createFields = {
+      total: 1,
+      decimals: 0,
+      unitName: 'ASA',
+      assetName: 'ASA',
+      from: sender,
+      manager: sender,
+    };
   });
 
   it('createApp', async function () {
@@ -31,14 +48,7 @@ describe('SDK', function () {
   });
 
   it('createAsset', async function () {
-    assetID = await createAsset(sender, signer, algodClient, appClient, {
-      total: 1,
-      decimals: 0,
-      unitName: 'ASA',
-      assetName: 'ASA',
-      from: sender,
-      manager: sender,
-    });
+    assetID = await createAsset(sender, signer, algodClient, appClient, createFields);
     expect(assetID).to.be.greaterThan(0);
   });
 
@@ -64,5 +74,28 @@ describe('SDK', function () {
     const value = await getMetadataField(algodClient, assetID, 'one');
 
     expect(value).to.equal('key one');
+  });
+
+  it('createAssetWithExtraMetadata', async function () {
+    const jsonData = { foo: 'bar', hello: 'world' };
+
+    const { appID } = await createAssetWithExtraMetadata(
+      sender,
+      signer,
+      algodClient,
+      createFields,
+      {
+        JSON: JSON.stringify(jsonData),
+      },
+    );
+
+    const boxes = (await algodClient.getApplicationBoxes(appID).do())
+      .boxes.map((b) => Buffer.from(b.name).toString());
+
+    expect(boxes).to.deep.equal([`${ARC_STRING}JSON`]);
+
+    const { value } = await algodClient.getApplicationBoxByName(appID, new Uint8Array(Buffer.from(`${ARC_STRING}JSON`))).do();
+
+    expect(JSON.parse(Buffer.from(value).toString())).to.deep.equal(jsonData);
   });
 });
