@@ -1,6 +1,24 @@
 #pragma version 8
 	b main
 
+preArrayAccess:
+	proto 3 0
+	frame_dig -3 // full tuple
+	store 0 // full tuple
+	load 0 // full tuple
+	frame_dig -1 // head offset
+	extract_uint16 // extract array offset
+	store 1 // array offset
+	load 0 // full tuple
+	load 1 // array offset
+	extract_uint16 // extract array length
+	frame_dig -2 // type length
+	* // array size
+	int 2
+	+ // array size + len
+	store 2 // full array length
+	retsub
+
 verifyOrSetASA:
 	proto 1 0
 
@@ -52,28 +70,6 @@ if0_end:
 	assert
 	retsub
 
-abi_route_updateMetadataEntry:
-	txn OnCompletion
-	int NoOp
-	==
-	txn ApplicationID
-	int 0
-	!=
-	&&
-	assert
-	byte 0x
-	pop
-	txna ApplicationArgs 3
-	btoi
-	txnas Assets
-	txna ApplicationArgs 2
-	extract 2 0
-	txna ApplicationArgs 1
-	extract 2 0
-	callsub updateMetadataEntry
-	int 1
-	return
-
 updateMetadataEntry:
 	proto 3 0
 
@@ -119,70 +115,78 @@ abi_route_updateMetadataEntries:
 updateMetadataEntries:
 	proto 4 0
 
-	// token_metadata.algo.ts:28
+	// token_metadata.algo.ts:29
 	// this.verifyOrSetASA(asa)
 	byte 0x
 	pop
 	frame_dig -3 // asa: asset
 	callsub verifyOrSetASA
 
-	// token_metadata.algo.ts:30
-	// i = 8
-	int 8
+	// token_metadata.algo.ts:31
+	// i = 0
+	int 0
 	frame_bury -4 // i: uint64
 
 for_0:
 	frame_dig -4 // i: uint64
-	int 8
+	int 4
 	<
 	bz for_0_end
 
 	// if1_condition
-	// token_metadata.algo.ts:31
+	// token_metadata.algo.ts:32
 	// values[i] === ''
-	frame_dig -2 // values: bytes[8]
+	frame_dig -2 // values: bytes[4]
+	int 1 // type length
 	frame_dig -4 // i: uint64
-	int 1
-	*
-	int 1
+	int 2
+	* // head offset
+	callsub preArrayAccess
+	load 0 // full tuple
+	load 1 // array offset
+	load 2 // full array length
 	extract3
+	extract 2 0 // extract bytes from string
 	byte ""
 	==
 	bz if1_end
 
 	// if1_consequent
-	// token_metadata.algo.ts:31
+	// token_metadata.algo.ts:32
 	// return
-	itob
-	byte 0x
-	b&
-	byte 0x151f7c75
-	swap
-	concat
-	log
 	retsub
 
 if1_end:
-	// token_metadata.algo.ts:32
+	// token_metadata.algo.ts:33
 	// this.updateMetadataEntry(keys[i], values[i], asa)
 	byte 0x
 	pop
 	frame_dig -3 // asa: asset
-	frame_dig -2 // values: bytes[8]
+	frame_dig -2 // values: bytes[4]
+	int 1 // type length
 	frame_dig -4 // i: uint64
-	int 1
-	*
-	int 1
+	int 2
+	* // head offset
+	callsub preArrayAccess
+	load 0 // full tuple
+	load 1 // array offset
+	load 2 // full array length
 	extract3
-	frame_dig -1 // keys: bytes[8]
+	extract 2 0 // extract bytes from string
+	frame_dig -1 // keys: bytes[4]
+	int 1 // type length
 	frame_dig -4 // i: uint64
-	int 1
-	*
-	int 1
+	int 2
+	* // head offset
+	callsub preArrayAccess
+	load 0 // full tuple
+	load 1 // array offset
+	load 2 // full array length
 	extract3
+	extract 2 0 // extract bytes from string
 	callsub updateMetadataEntry
 
-	// token_metadata.algo.ts:30
+	// token_metadata.algo.ts:31
 	// i = i + 1
 	frame_dig -4 // i: uint64
 	int 1
@@ -216,14 +220,14 @@ abi_route_deleteMetadataEntry:
 deleteMetadataEntry:
 	proto 2 0
 
-	// token_metadata.algo.ts:37
+	// token_metadata.algo.ts:38
 	// this.verifyOrSetASA(asa)
 	byte 0x
 	pop
 	frame_dig -2 // asa: asset
 	callsub verifyOrSetASA
 
-	// token_metadata.algo.ts:39
+	// token_metadata.algo.ts:40
 	// this.metadataEntry.delete(concat(ARC_STRING, key))
 	byte "ARCXXXX"
 	frame_dig -1 // key: bytes
@@ -252,34 +256,34 @@ abi_route_reclaimALGOs:
 reclaimALGOs:
 	proto 1 0
 
-	// token_metadata.algo.ts:43
+	// token_metadata.algo.ts:44
 	// this.verifyOrSetASA(asa)
 	byte 0x
 	pop
 	frame_dig -1 // asa: asset
 	callsub verifyOrSetASA
 
-	// token_metadata.algo.ts:45
+	// token_metadata.algo.ts:46
 	// sendPayment({
 	itxn_begin
 	int pay
 	itxn_field TypeEnum
 
-	// token_metadata.algo.ts:46
+	// token_metadata.algo.ts:47
 	// sender: this.app.address
 	txna Applications 0
 	app_params_get AppAddress
 	assert
 	itxn_field Sender
 
-	// token_metadata.algo.ts:47
+	// token_metadata.algo.ts:48
 	// receiver: asa.manager
 	frame_dig -1 // asa: asset
 	asset_params_get AssetManager
 	assert
 	itxn_field Receiver
 
-	// token_metadata.algo.ts:48
+	// token_metadata.algo.ts:49
 	// amount: this.app.address.balance - this.app.address.minBalance
 	txna Applications 0
 	app_params_get AppAddress
@@ -294,7 +298,7 @@ reclaimALGOs:
 	-
 	itxn_field Amount
 
-	// token_metadata.algo.ts:49
+	// token_metadata.algo.ts:50
 	// fee: 0
 	int 0
 	itxn_field Fee
@@ -316,9 +320,8 @@ main:
 	return
 
 route_abi:
-	method "updateMetadataEntry(byte[],byte[],asset)void"
-	method "updateMetadataEntries(string[8],string[8],asset)void"
+	method "updateMetadataEntries(string[4],string[4],asset)void"
 	method "deleteMetadataEntry(byte[],asset)void"
 	method "reclaimALGOs(asset)void"
 	txna ApplicationArgs 0
-	match abi_route_updateMetadataEntry abi_route_updateMetadataEntries abi_route_deleteMetadataEntry abi_route_reclaimALGOs
+	match abi_route_updateMetadataEntries abi_route_deleteMetadataEntry abi_route_reclaimALGOs

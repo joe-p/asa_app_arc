@@ -2,7 +2,7 @@ import algosdk, { AtomicTransactionComposer } from 'algosdk';
 import { Buffer } from 'buffer';
 import { TokenMetadata } from './tokenmetadata_client';
 
-const ARC_STRING = 'ARCXXX';
+const ARC_STRING = 'ARCXXXX';
 const BOX_CREATE_COST = 0.0025e6;
 const BOX_BYTE_COST = 0.0004e6;
 
@@ -60,7 +60,7 @@ export async function createAsset(
 
   const results = await asaATC.execute(algodClient, 3);
 
-  return (await algodClient.pendingTransactionInformation(results[0].txId).do())['asset-index'];
+  return (await algodClient.pendingTransactionInformation(results.txIDs[0]).do())['asset-index'];
 }
 
 export async function createMetadataEntries(
@@ -86,10 +86,26 @@ export async function createMetadataEntries(
     suggestedParams,
     from: sender,
     to: appClient.appAddress,
-    amount: numBoxes * BOX_CREATE_COST + totalSize * BOX_BYTE_COST,
+    amount: numBoxes * BOX_CREATE_COST + totalSize * BOX_BYTE_COST + 100_000,
   });
 
   atc.addTransaction({ txn: appFundTxn, signer });
+
+  const keys = new Array(4).fill('');
+  const values = new Array(4).fill('');
+
+  Object.values(extraMetadata).forEach((v, i) => { values[i] = v; });
+  Object.keys(extraMetadata).forEach((v, i) => { keys[i] = v; });
+
+  const boxes: algosdk.BoxReference[] = Object.keys(extraMetadata).map((k) => {
+    const nameString = ARC_STRING + k;
+    const name = new Uint8Array(Buffer.from(nameString, 'utf-8'));
+
+    return {
+      name,
+      appIndex: appClient.appId,
+    };
+  });
 
   atc.addMethodCall({
     appID: appClient.appId,
@@ -97,11 +113,8 @@ export async function createMetadataEntries(
     sender,
     signer,
     suggestedParams,
-    methodArgs: [Object.keys(extraMetadata), Object.values(extraMetadata), assetID],
-    boxes: Object.keys(extraMetadata).map((k) => ({
-      appIndex: 0,
-      name: new Uint8Array(Buffer.from(ARC_STRING + k)),
-    })),
+    methodArgs: [keys, values, assetID],
+    boxes,
   });
 
   await atc.execute(algodClient, 3);

@@ -18,16 +18,16 @@ class TokenMetadata extends Contract {
     assert(this.txn.sender === this.asa.get().manager);
   }
 
-  updateMetadataEntry(key: bytes, value: bytes, asa: Asset): void {
+  private updateMetadataEntry(key: bytes, value: bytes, asa: Asset): void {
     this.verifyOrSetASA(asa);
 
     this.metadataEntry.put(concat(ARC_STRING, key), value);
   }
 
-  updateMetadataEntries(keys: StaticArray<string, 8>, values: StaticArray<string, 8>, asa: Asset): void {
+  updateMetadataEntries(keys: StaticArray<string, 4>, values: StaticArray<string, 4>, asa: Asset): void {
     this.verifyOrSetASA(asa);
     
-    for (let i = 8; i < 8; i = i + 1) {
+    for (let i = 0; i < 4; i = i + 1) {
       if (values[i] === '') return
       this.updateMetadataEntry(keys[i], values[i], asa);
     }

@@ -1,11 +1,14 @@
 module.exports = {
+  ignorePatterns: ['*_client.ts'],
   env: {
     browser: true,
     es2021: true,
-    node: true,
   },
   extends: [
     'airbnb-base',
+    'plugin:mocha/recommended',
+    'plugin:import/errors',
+    'plugin:import/warnings',
     'plugin:import/typescript',
   ],
   parser: '@typescript-eslint/parser',
@@ -15,8 +18,11 @@ module.exports = {
   },
   plugins: [
     '@typescript-eslint',
+    'mocha',
   ],
   rules: {
+    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/ban-ts-comment': 'warn',
     'import/prefer-default-export': 'off',
     'import/extensions': [
       'error',
@@ -28,6 +34,26 @@ module.exports = {
         tsx: 'never',
       },
     ],
+    'import/no-extraneous-dependencies': [
+      'error',
+      {
+        devDependencies: [
+          '**/*.test.ts',
+        ],
+      },
+    ],
   },
-  ignorePatterns: ['*_client.ts'],
+  overrides: [
+    {
+      files: ['*.algo.ts'],
+      rules: {
+        'object-shorthand': 'off',
+        'class-methods-use-this': 'off',
+        'no-undef': 'off',
+        'max-classes-per-file': 'off',
+        'no-bitwise': 'off',
+        'operator-assignment': 'off',
+      },
+    },
+  ],
 };
