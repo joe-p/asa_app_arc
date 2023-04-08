@@ -5,7 +5,9 @@ import { expect } from 'chai';
 import { TransactionSigner } from 'algosdk';
 import { sandbox, clients } from 'beaker-ts';
 import { Buffer } from 'buffer';
-import { createApp, createAsset, createMetadataEntries } from '../src/index';
+import {
+  createApp, createAsset, createMetadataEntries, getMetadataField,
+} from '../src/index';
 import { TokenMetadata } from '../src/tokenmetadata_client';
 
 const ARC_STRING = 'ARCXXXX';
@@ -54,7 +56,13 @@ describe('SDK', function () {
     boxes.forEach(async (key) => {
       const value = await appClient.getApplicationBox(key);
 
-      expect(value).to.be(`${key} ${key.replace(ARC_STRING, '')}`);
+      expect(value).to.equal(`${key} ${key.replace(ARC_STRING, '')}`);
     });
+  });
+
+  it('getMetadataField', async function () {
+    const value = await getMetadataField(algodClient, assetID, 'one');
+
+    expect(value).to.equal('key one');
   });
 });

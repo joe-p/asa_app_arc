@@ -136,4 +136,17 @@ export async function createAssetWithExtraMetadata(
   return { appID: appClient.appId, assetID };
 }
 
-export function updateAssetMetadataField() {}
+export async function getMetadataField(
+  algodClient: algosdk.Algodv2,
+  assetId: number,
+  field: string,
+): Promise<string> {
+  const appID = parseInt((await algodClient.getAssetByID(assetId).do()).params.url.replace(`${ARC_STRING}-`, ''), 10);
+
+  const { value } = await algodClient.getApplicationBoxByName(
+    appID,
+    new Uint8Array(Buffer.from(ARC_STRING + field)),
+  ).do();
+
+  return Buffer.from(value).toString();
+}
