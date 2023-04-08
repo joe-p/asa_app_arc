@@ -6,7 +6,7 @@
     "build": "tsx ../node_modules/@algorandfoundation/tealscript/src/bin/tealscript.ts token_metadata.algo.ts artifacts"
   },
   "dependencies": {
-    "@algorandfoundation/tealscript": "git+https://github.com/algorand-devrel/tealscript#64d2fd4",
+    "@algorandfoundation/tealscript": "git+https://github.com/algorand-devrel/tealscript#c9cb9f60e8d70ecdae125310188ca5838a84549e",
     "typescript": "^5.0.4"
   },
   "devDependencies": {

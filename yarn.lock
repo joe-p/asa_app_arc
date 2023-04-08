@@ -2,9 +2,9 @@
 # yarn lockfile v1
 
 
-"@algorandfoundation/tealscript@git+https://github.com/algorand-devrel/tealscript#64d2fd4":
+"@algorandfoundation/tealscript@git+https://github.com/algorand-devrel/tealscript#c9cb9f60e8d70ecdae125310188ca5838a84549e":
   version "0.9.0"
-  resolved "git+https://github.com/algorand-devrel/tealscript#64d2fd4ba5ed76bd17e81636752cf9c443139214"
+  resolved "git+https://github.com/algorand-devrel/tealscript#c9cb9f60e8d70ecdae125310188ca5838a84549e"
   dependencies:
     node-fetch "2"
     typescript "^4.9.3"
