@@ -9,7 +9,6 @@ const BOX_BYTE_COST = 0.0004e6;
 type CreateFields = {
     total: number | bigint
     decimals: number
-    from: string
     manager: string
     unitName?: string
     assetName?: string

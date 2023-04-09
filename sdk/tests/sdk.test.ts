@@ -21,7 +21,6 @@ let createFields: {
   decimals: number
   unitName: string
   assetName: string
-  from: string
   manager: string
 };
 
@@ -37,7 +36,6 @@ describe('SDK', function () {
       decimals: 0,
       unitName: 'ASA',
       assetName: 'ASA',
-      from: sender,
       manager: sender,
     };
   });
