@@ -39,16 +39,18 @@ function calculateTotalCost() {
 }
 
 function calculateMBRandFees() {
-  const keys = Array.from(metadataTable.querySelectorAll('.key')).map((i: HTMLInputElement) => i.value.length + ARC_STRING.length + 8);
-  const values = Array.from(metadataTable.querySelectorAll('.value')).map((i: HTMLInputElement) => i.value.length);
+  const keyLengths = Array.from(metadataTable.querySelectorAll('.key')).map((i: HTMLInputElement) => i.value.length + ARC_STRING.length + 8);
+  const valueLengths = Array.from(metadataTable.querySelectorAll('.value')).map((i: HTMLInputElement) => i.value.length);
 
-  const totalSize = keys.reduce((a, b) => a + b, 0) + values.reduce((a, b) => a + b, 0);
+  const totalSize = keyLengths.reduce((a, b) => a + b, 0) + valueLengths.reduce((a, b) => a + b, 0);
 
-  const boxMbr = BOX_CREATE_COST * keys.filter((k) => k > 0).length + BOX_BYTE_COST * totalSize;
+  const nonEmptyKeys = (keyLengths.filter((k) => k > ARC_STRING.length + 8)).length;
+
+  const boxMbr = BOX_CREATE_COST * nonEmptyKeys + BOX_BYTE_COST * totalSize;
 
   boxMbrCost.innerHTML = boxMbr.toFixed(4).toString();
 
-  const totalFee = Math.ceil(keys.filter((k) => k > 0).length / 4) * 0.001;
+  const totalFee = Math.ceil(nonEmptyKeys / 4) * 0.001;
 
   fees.innerHTML = (0.0020 + totalFee).toFixed(4).toString();
 
