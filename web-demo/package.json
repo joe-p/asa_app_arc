@@ -1,8 +1,6 @@
 {
-  "name": "my-algorand-project",
-  "version": "1.0.0",
-  "description": "My algorand project",
-  "main": "index.js",
+  "name": "web-demo",
+  "version": "0.0.0",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack --mode=production --node-env=production",

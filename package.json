@@ -5,6 +5,7 @@
   "private": true,
   "workspaces": [
     "contract",
-    "sdk"
+    "sdk",
+    "web-demo"
   ]
 }
