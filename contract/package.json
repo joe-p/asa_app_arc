@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "@algorandfoundation/tealscript": "git+https://github.com/algorand-devrel/tealscript#9eb44fc22f9cc464b12fa0eea70a282f5d15c6cb",
+    "eslint": "^8.38.0",
     "typescript": "^5.0.4"
   },
   "devDependencies": {

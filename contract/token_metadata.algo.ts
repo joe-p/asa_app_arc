@@ -6,14 +6,15 @@ const MAX_ITERATIONS = 4;
 // eslint-disable-next-line no-unused-vars
 class TokenMetadata extends Contract {
   metadataEntry = new BoxMap<bytes, bytes>();
+
   asa = new GlobalReference<Asset>();
 
   private verifyOrSetASA(asa: Asset): void {
     if (this.asa.exists()) {
       assert(this.asa.get() === asa);
     } else {
-      assert(this.txn.sender === this.app.creator)
-      this.asa.put(asa)
+      assert(this.txn.sender === this.app.creator);
+      this.asa.put(asa);
     }
 
     assert(this.txn.sender === this.asa.get().manager);
@@ -25,11 +26,15 @@ class TokenMetadata extends Contract {
     this.metadataEntry.put(ARC_STRING + key, value);
   }
 
-  updateMetadataEntries(keys: StaticArray<string, typeof MAX_ITERATIONS>, values: StaticArray<string, typeof MAX_ITERATIONS>, asa: Asset): void {
+  updateMetadataEntries(
+    keys: StaticArray<string, typeof MAX_ITERATIONS>,
+    values: StaticArray<string, typeof MAX_ITERATIONS>,
+    asa: Asset,
+  ): void {
     this.verifyOrSetASA(asa);
-    
+
     for (let i = 0; i < MAX_ITERATIONS; i = i + 1) {
-      if (values[i] === '') return
+      if (values[i] === '') return;
       this.updateMetadataEntry(keys[i], values[i], asa);
     }
   }
@@ -43,7 +48,7 @@ class TokenMetadata extends Contract {
   reclaimALGOs(asa: Asset): void {
     this.verifyOrSetASA(asa);
 
-     sendPayment({
+    sendPayment({
       sender: this.app.address,
       receiver: asa.manager,
       amount: this.app.address.balance - this.app.address.minBalance,
