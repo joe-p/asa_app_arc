@@ -15,14 +15,51 @@ const decimalsInput = document.getElementById('decimals') as HTMLInputElement;
 const nameInput = document.getElementById('name') as HTMLInputElement;
 const unitName = document.getElementById('unit') as HTMLInputElement;
 
+const totalCost = document.getElementById('total') as HTMLElement;
+const boxMbrCost = document.getElementById('box-mbr') as HTMLElement;
+const appMbrCost = document.getElementById('app-mbr') as HTMLElement;
+const asaMbrCost = document.getElementById('asa-mbr') as HTMLElement;
+const fees = document.getElementById('fees') as HTMLElement;
+
+const BOX_CREATE_COST = 0.0025;
+const BOX_BYTE_COST = 0.0004;
+
 const buttonIds = ['connect', 'create', 'add', 'remove'];
 const buttons: { [key: string]: HTMLButtonElement } = {};
 const pera = new PeraSession();
+
+function calculateTotalCost() {
+  const total = parseFloat(fees.innerHTML)
+  + parseFloat(boxMbrCost.innerHTML)
+  + parseFloat(appMbrCost.innerHTML)
+  + parseFloat(asaMbrCost.innerHTML);
+
+  totalCost.innerHTML = total.toString();
+}
+
+function calculateMBRandFees() {
+  const keys = Array.from(metadataTable.querySelectorAll('.key')).map((i: HTMLInputElement) => i.value.length);
+  const values = Array.from(metadataTable.querySelectorAll('.value')).map((i: HTMLInputElement) => i.value.length);
+
+  const totalSize = keys.reduce((a, b) => a + b, 0) + values.reduce((a, b) => a + b, 0);
+
+  const boxMbr = BOX_CREATE_COST * keys.filter((k) => k > 0).length + BOX_BYTE_COST * totalSize;
+
+  boxMbrCost.innerHTML = boxMbr.toString();
+
+  const totalFee = Math.ceil(keys.filter((k) => k > 0).length / 4) * 0.001;
+
+  fees.innerHTML = (0.0020 + totalFee).toString();
+
+  calculateTotalCost();
+}
 
 function addBoxField() {
   const row = metadataTable.insertRow();
   const keyCell = row.insertCell();
   const valueCell = row.insertCell();
+  keyCell.oninput = calculateMBRandFees;
+  valueCell.oninput = calculateMBRandFees;
 
   keyCell.innerHTML = '<input type="text" class="key">';
   valueCell.innerHTML = '<input type="text" class="value">';
@@ -46,6 +83,8 @@ async function getBoxes(app: number): Promise<Record<string, string>> {
 function signer(txns: algosdk.Transaction[]) {
   return pera.signTxns(txns);
 }
+
+calculateTotalCost();
 
 Array(4).fill(null).forEach(() => {
   addBoxField();

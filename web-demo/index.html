@@ -16,6 +16,40 @@
     <button id="create">Create</button>
     <br>
 
+    <h2>Total Cost</h2>
+    <table id="asa">
+        <tr>
+            <th>Cost</th>
+            <th>Amount (ALGO)</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>Fees</td>
+            <td id="fees" style="text-align: center">0.0020</td>
+            <td>The total amount of fees paid.</td>
+        </tr>
+        <tr>
+            <td>ASA MBR</td>
+            <td id="asa-mbr" style="text-align: center">0.1000</td>
+            <td>The amount of ALGO locked in the creators account. This amount is unlocked by deleting the asset.</td>
+        </tr>
+        <tr>
+            <td>App MBR</td>
+            <td id="app-mbr" style="text-align: center">0.1285</td>
+            <td>The amount of ALGO locked in the creators account. This amount is unlocked by deleting the app (asset must be deleted first).</td>
+        </tr>
+        <tr>
+            <td>Box MBR</td>
+            <td id="box-mbr" style="text-align: center">0.0000</td>
+            <td>The amount of ALGO sent to the app for the boxes. This amount is recoverable by deleting boxes.</td>
+        </tr>
+        <tr>
+            <td><b>Total</b></td>
+            <td style="text-align: center"><b id="total"></b></td>
+        </tr>
+        
+    </table>
+
     <h2>ASA Fields</h2>
     <table id="asa">
         <tr>
