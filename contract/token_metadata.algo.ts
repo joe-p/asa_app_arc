@@ -22,7 +22,7 @@ class TokenMetadata extends Contract {
   private updateMetadataEntry(key: bytes, value: bytes, asa: Asset): void {
     this.verifyOrSetASA(asa);
 
-    this.metadataEntry.put(concat(ARC_STRING, key), value);
+    this.metadataEntry.put(ARC_STRING + key, value);
   }
 
   updateMetadataEntries(keys: StaticArray<string, typeof MAX_ITERATIONS>, values: StaticArray<string, typeof MAX_ITERATIONS>, asa: Asset): void {
@@ -37,7 +37,7 @@ class TokenMetadata extends Contract {
   deleteMetadataEntry(key: bytes, asa: Asset): void {
     this.verifyOrSetASA(asa);
 
-    this.metadataEntry.delete(concat(ARC_STRING, key));
+    this.metadataEntry.delete(ARC_STRING + key);
   }
 
   reclaimALGOs(asa: Asset): void {

@@ -81,7 +81,7 @@ updateMetadataEntry:
 	callsub verifyOrSetASA
 
 	// token_metadata.algo.ts:25
-	// this.metadataEntry.put(concat(ARC_STRING, key), value)
+	// this.metadataEntry.put(ARC_STRING + key, value)
 	byte "ARCXXXX"
 	frame_dig -1 // key: bytes
 	concat
@@ -228,7 +228,7 @@ deleteMetadataEntry:
 	callsub verifyOrSetASA
 
 	// token_metadata.algo.ts:40
-	// this.metadataEntry.delete(concat(ARC_STRING, key))
+	// this.metadataEntry.delete(ARC_STRING + key)
 	byte "ARCXXXX"
 	frame_dig -1 // key: bytes
 	concat
