@@ -1,20 +1,19 @@
+/* eslint-disable no-restricted-syntax */
 /* eslint-disable func-names */
 /* eslint-disable prefer-arrow-callback */
 
 import { expect } from 'chai';
-import { TransactionSigner } from 'algosdk';
-import { sandbox, clients } from 'beaker-ts';
+import algosdk, { TransactionSigner } from 'algosdk';
 import { Buffer } from 'buffer';
 import {
   createApp, createAsset, createMetadataEntries, getMetadataField, createAssetWithExtraMetadata,
 } from '../src/index';
-import { TokenMetadata } from '../src/tokenmetadata_client';
 
 const ARC_STRING = 'ARCXXXX';
 
 let sender: string;
 let signer: TransactionSigner;
-let appClient: TokenMetadata;
+let appId: number;
 let assetID: number;
 let createFields: {
   total: number
@@ -24,11 +23,67 @@ let createFields: {
   manager: string
 };
 
-const algodClient = clients.sandboxAlgod();
+async function getAccounts(): Promise<{
+  addr: string,
+  privateKey: Uint8Array,
+  signer: algosdk.TransactionSigner,
+}[]> {
+  const kmdClient = new algosdk.Kmd('a'.repeat(64), 'http://localhost', 4002);
+
+  const wallets = await kmdClient.listWallets();
+
+  let walletId;
+  for (const wallet of wallets.wallets) {
+    if (wallet.name === 'unencrypted-default-wallet') walletId = wallet.id;
+  }
+
+  if (walletId === undefined) throw Error('No wallet named: "unencrypted-default-wallet"');
+
+  const handleResp = await kmdClient.initWalletHandle(walletId, '');
+  const handle = handleResp.wallet_handle_token;
+
+  const addresses = await kmdClient.listKeys(handle);
+  const acctPromises: Promise<{ private_key: Buffer }>[] = [];
+  for (const addr of addresses.addresses) {
+    acctPromises.push(kmdClient.exportKey(handle, '', addr));
+  }
+  const keys = await Promise.all(acctPromises);
+
+  // Don't need to wait for it
+  kmdClient.releaseWalletHandle(handle);
+
+  return keys.map((k) => {
+    const addr = algosdk.encodeAddress(k.private_key.slice(32));
+    const acct = { sk: k.private_key, addr } as algosdk.Account;
+    const txnSigner = algosdk.makeBasicAccountTransactionSigner(acct);
+    return {
+      addr: acct.addr,
+      privateKey: acct.sk,
+      signer: txnSigner,
+    };
+  });
+}
+
+const algodClient = new algosdk.Algodv2('a'.repeat(64), 'http://localhost', 4001);
+
+async function getBoxes(app: number): Promise<Record<string, string>> {
+  const { boxes } = await algodClient.getApplicationBoxes(app).do();
+
+  const boxObject: Record<string, string> = {};
+
+  const boxPromises = boxes.map(async (b) => {
+    const box = await algodClient.getApplicationBoxByName(app, b.name).do();
+    boxObject[Buffer.from(b.name).toString()] = Buffer.from(box.value).toString();
+  });
+
+  await Promise.all(boxPromises);
+
+  return boxObject;
+}
 
 describe('SDK', function () {
   before(async function () {
-    const acct = (await sandbox.getAccounts())[0];
+    const acct = (await getAccounts())[0];
     sender = acct.addr;
     signer = acct.signer;
     createFields = {
@@ -41,31 +96,29 @@ describe('SDK', function () {
   });
 
   it('createApp', async function () {
-    appClient = await createApp(algodClient, sender, signer);
-    expect(appClient.appId).to.be.greaterThan(0);
+    appId = await createApp(algodClient, sender, signer);
+    expect(appId).to.be.greaterThan(0);
   });
 
   it('createAsset', async function () {
-    assetID = await createAsset(sender, signer, algodClient, appClient, createFields);
+    assetID = await createAsset(sender, signer, algodClient, appId, createFields);
     expect(assetID).to.be.greaterThan(0);
   });
 
   it('createMetadataEntries', async function () {
-    await createMetadataEntries(sender, signer, appClient, algodClient, assetID, {
+    const metadata = {
       one: 'key one',
       two: 'key two',
       three: 'key three',
       four: 'key four',
-    });
+    };
 
-    const boxes = (await appClient.getApplicationBoxNames()).map((k) => Buffer.from(k).toString());
-    expect(boxes).includes.all.members([`${ARC_STRING}one`, `${ARC_STRING}two`, `${ARC_STRING}three`, `${ARC_STRING}four`]);
+    await createMetadataEntries(sender, signer, appId, algodClient, assetID, metadata);
 
-    boxes.forEach(async (key) => {
-      const value = await appClient.getApplicationBox(key);
+    const boxes = await getBoxes(appId);
 
-      expect(value).to.equal(`${key} ${key.replace(ARC_STRING, '')}`);
-    });
+    expect(Object.keys(boxes).sort()).to.deep.equal(Object.keys(metadata).map((k) => `${ARC_STRING}${k}`).sort());
+    expect(Object.values(boxes).sort()).to.deep.equal(Object.values(metadata).sort());
   });
 
   it('getMetadataField', async function () {
@@ -75,7 +128,7 @@ describe('SDK', function () {
   });
 
   it('createAssetWithExtraMetadata', async function () {
-    const jsonData = { foo: 'bar', hello: 'world' };
+    const jsonData = JSON.stringify({ foo: 'bar', hello: 'world' });
 
     const { appID } = await createAssetWithExtraMetadata(
       sender,
@@ -83,18 +136,12 @@ describe('SDK', function () {
       algodClient,
       createFields,
       {
-        JSON: JSON.stringify(jsonData),
+        JSON: jsonData,
       },
     );
 
-    const boxes = (await algodClient.getApplicationBoxes(appID).do())
-      .boxes.map((b) => Buffer.from(b.name).toString());
-
-    expect(boxes).to.deep.equal([`${ARC_STRING}JSON`]);
-
-    const { value } = await algodClient.getApplicationBoxByName(appID, new Uint8Array(Buffer.from(`${ARC_STRING}JSON`))).do();
-
-    expect(JSON.parse(Buffer.from(value).toString())).to.deep.equal(jsonData);
+    const boxes = await getBoxes(appID);
+    expect(boxes).to.deep.equal({ [`${ARC_STRING}JSON`]: jsonData });
   });
 
   it('60 properties', async function () {
@@ -109,14 +156,9 @@ describe('SDK', function () {
       metadata,
     );
 
-    const boxes = (await algodClient.getApplicationBoxes(appID).do())
-      .boxes.map((b) => Buffer.from(b.name).toString());
+    const boxes = await getBoxes(appID);
 
-    expect(boxes.sort()).to.deep.equal(Object.keys(metadata).map((k) => `${ARC_STRING}${k}`).sort());
-
-    boxes.forEach(async (key) => {
-      const { value } = await algodClient.getApplicationBoxByName(appID, new Uint8Array(Buffer.from(`${ARC_STRING}${key}`))).do();
-      expect(value).to.equal(`value ${key}`);
-    });
+    expect(Object.keys(boxes).sort()).to.deep.equal(Object.keys(metadata).map((k) => `${ARC_STRING}${k}`).sort());
+    expect(Object.values(boxes).sort()).to.deep.equal(Object.values(metadata).sort());
   });
 });

@@ -8,11 +8,6 @@ const webpack = require('webpack');
 const isProduction = process.env.NODE_ENV === 'production';
 
 const config = {
-  stats: {
-    warningsFilter: [
-      'beaker-ts',
-    ],
-  },
   entry: './src/index.ts',
   output: {
     path: path.resolve(__dirname, 'dist'),

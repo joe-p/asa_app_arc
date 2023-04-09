@@ -1,10 +1,11 @@
 import algosdk, { AtomicTransactionComposer } from 'algosdk';
 import { Buffer } from 'buffer';
-import { TokenMetadata } from './tokenmetadata_client';
+import appSpec from 'contract/artifacts/TokenMetadata.json';
 
 const ARC_STRING = 'ARCXXXX';
 const BOX_CREATE_COST = 0.0025e6;
 const BOX_BYTE_COST = 0.0004e6;
+const CONTRACT = new algosdk.ABIContract(appSpec.contract);
 
 type CreateFields = {
     total: number | bigint
@@ -24,23 +25,35 @@ export async function createApp(
   algodClient: algosdk.Algodv2,
   sender: string,
   signer: algosdk.TransactionSigner,
-): Promise<TokenMetadata> {
-  const appClient = new TokenMetadata({
-    client: algodClient,
-    sender,
-    signer,
+): Promise<number> {
+  const atc = new AtomicTransactionComposer();
+  const compiledApproval = await algodClient.compile(Buffer.from(appSpec.source.approval, 'base64')).do();
+  const compiledClear = await algodClient.compile(Buffer.from(appSpec.source.clear, 'base64')).do();
+
+  const appCreateTxn = algosdk.makeApplicationCreateTxnFromObject({
+    from: sender,
+    onComplete: algosdk.OnApplicationComplete.NoOpOC,
+    approvalProgram: new Uint8Array(Buffer.from(compiledApproval.result, 'base64')),
+    clearProgram: new Uint8Array(Buffer.from(compiledClear.result, 'base64')),
+    numGlobalByteSlices: 0,
+    numGlobalInts: 1,
+    numLocalByteSlices: 0,
+    numLocalInts: 0,
+    suggestedParams: await algodClient.getTransactionParams().do(),
   });
 
-  await appClient.createApplication();
+  atc.addTransaction({ txn: appCreateTxn, signer });
 
-  return appClient;
+  const results = await atc.execute(algodClient, 3);
+
+  return (await algodClient.pendingTransactionInformation(results.txIDs[0]).do())['application-index'];
 }
 
 export async function createAsset(
   sender: string,
   signer: algosdk.TransactionSigner,
   algodClient: algosdk.Algodv2,
-  appClient: TokenMetadata,
+  appId: number,
   fields: CreateFields,
 ): Promise<number> {
   const suggestedParams = fields.suggestedParams || await algodClient.getTransactionParams().do();
@@ -50,7 +63,7 @@ export async function createAsset(
     from: sender,
     suggestedParams,
     defaultFrozen: fields.defaultFrozen || false,
-    assetURL: `${ARC_STRING}-${appClient.appId}`,
+    assetURL: `${ARC_STRING}-${appId}`,
   });
 
   const asaATC = new AtomicTransactionComposer();
@@ -74,7 +87,7 @@ function sliceIntoChunks(array: string[], chunkSize: number) {
 export async function createMetadataEntries(
   sender: string,
   signer: algosdk.TransactionSigner,
-  appClient: TokenMetadata,
+  appId: number,
   algodClient: algosdk.Algodv2,
   assetID: number,
   extraMetadata: Record<string, string>,
@@ -93,7 +106,7 @@ export async function createMetadataEntries(
   const appFundTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
     suggestedParams,
     from: sender,
-    to: appClient.appAddress,
+    to: algosdk.getApplicationAddress(appId),
     amount: numBoxes * BOX_CREATE_COST + totalSize * BOX_BYTE_COST + 100_000,
   });
 
@@ -114,13 +127,13 @@ export async function createMetadataEntries(
 
       return {
         name,
-        appIndex: appClient.appId,
+        appIndex: appId,
       };
     });
 
     atc.addMethodCall({
-      appID: appClient.appId,
-      method: algosdk.getMethodByName(appClient.methods, 'updateMetadataEntries'),
+      appID: appId,
+      method: algosdk.getMethodByName(CONTRACT.methods, 'updateMetadataEntries'),
       sender,
       signer,
       suggestedParams,
@@ -139,13 +152,13 @@ export async function createAssetWithExtraMetadata(
   fields: CreateFields,
   extraMetadata: Record<string, string> = {},
 ): Promise<{appID: number, assetID: number}> {
-  const appClient = await createApp(algodClient, sender, signer);
+  const appId = await createApp(algodClient, sender, signer);
 
-  const assetID = await createAsset(sender, signer, algodClient, appClient, fields);
+  const assetID = await createAsset(sender, signer, algodClient, appId, fields);
 
-  await createMetadataEntries(sender, signer, appClient, algodClient, assetID, extraMetadata);
+  await createMetadataEntries(sender, signer, appId, algodClient, assetID, extraMetadata);
 
-  return { appID: appClient.appId, assetID };
+  return { appID: appId, assetID };
 }
 
 export async function getMetadataField(

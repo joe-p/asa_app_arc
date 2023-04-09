@@ -4,7 +4,6 @@
   "main": "src/index.ts",
   "license": "MIT",
   "scripts": {
-    "build": "beaker generate ../contract/artifacts/TokenMetadata.json src/",
     "test": "mocha -r ts-node/register 'tests/*.test.ts'"
   },
   "devDependencies": {
@@ -12,7 +11,6 @@
     "@types/mocha": "^10.0.1",
     "@typescript-eslint/eslint-plugin": "^5.57.1",
     "@typescript-eslint/parser": "^5.57.1",
-    "beaker-ts": "^0.1.2",
     "chai": "^4.3.7",
     "eslint": "^7.32.0 || ^8.2.0",
     "eslint-config-airbnb-base": "^15.0.0",
