@@ -1,7 +1,8 @@
+/* eslint-disable no-alert */
 /* eslint-disable import/no-unresolved */
 /* eslint-disable import/extensions */
 import algosdk from 'algosdk';
-import { createAssetWithExtraMetadata } from 'sdk/src/index';
+import { createApp, createAsset, createMetadataEntries } from 'sdk/src/index';
 import PeraSession from './wallets/pera';
 
 const algodClient = new algosdk.Algodv2('', 'https://testnet-api.algonode.cloud', '');
@@ -25,6 +26,25 @@ function addBoxField() {
 
   keyCell.innerHTML = '<input type="text" class="key">';
   valueCell.innerHTML = '<input type="text" class="value">';
+}
+
+async function getBoxes(app: number): Promise<Record<string, string>> {
+  const { boxes } = await algodClient.getApplicationBoxes(app).do();
+
+  const boxObject: Record<string, string> = {};
+
+  const boxPromises = boxes.map(async (b) => {
+    const box = await algodClient.getApplicationBoxByName(app, b.name).do();
+    boxObject[Buffer.from(b.name).toString()] = Buffer.from(box.value).toString();
+  });
+
+  await Promise.all(boxPromises);
+
+  return boxObject;
+}
+
+function signer(txns: algosdk.Transaction[]) {
+  return pera.signTxns(txns);
 }
 
 Array(4).fill(null).forEach(() => {
@@ -70,22 +90,27 @@ buttons.create.onclick = async () => {
     metadata[k] = values[i];
   });
 
-  const { appID } = await createAssetWithExtraMetadata(
-    getAccount(),
-    pera.signTxns,
-    algodClient,
-    {
-      total: Number(totalInput.value),
-      decimals: Number(decimalsInput.value),
-      assetName: nameInput.value,
-      unitName: unitName.value,
-      manager: getAccount(),
-    },
-    metadata,
-  );
+  const createFields = {
+    total: Number(totalInput.value),
+    decimals: Number(decimalsInput.value),
+    assetName: nameInput.value,
+    unitName: unitName.value,
+    manager: getAccount(),
+  };
 
-  const boxes = (await algodClient.getApplicationBoxes(appID).do())
-    .boxes.map((b) => Buffer.from(b.name).toString());
+  const sender = getAccount();
 
-  console.log(boxes);
+  alert('There will be a total of three transaction groups to sign. This first one creates the application that will hold the box metadata');
+
+  const appID = await createApp(algodClient, sender, signer);
+
+  alert('This second transaction group creates the asset');
+
+  const assetID = await createAsset(sender, signer, algodClient, appID, createFields);
+
+  alert('This third transaction group creates the metadata entries');
+
+  await createMetadataEntries(sender, signer, appID, algodClient, assetID, metadata);
+
+  console.log(await getBoxes(appID));
 };
