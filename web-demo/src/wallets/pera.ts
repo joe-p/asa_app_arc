@@ -1,7 +1,7 @@
 import { PeraWalletConnect } from '@perawallet/connect';
 import algosdk from 'algosdk';
 
-export class PeraSession {
+export default class PeraSession {
   peraConnect: PeraWalletConnect;
 
   accounts: string[];

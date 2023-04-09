@@ -1,29 +1,34 @@
+/* eslint-disable import/no-unresolved */
+/* eslint-disable import/extensions */
 import algosdk from 'algosdk';
 import { createAssetWithExtraMetadata } from 'sdk/src/index';
-import { PeraSession } from './wallets/pera';
+import PeraSession from './wallets/pera';
 
 const algodClient = new algosdk.Algodv2('', 'https://testnet-api.algonode.cloud', '');
 
 const accountsMenu = document.getElementById('accounts') as HTMLSelectElement;
 const metadataTable = document.getElementById('metadata') as HTMLTableElement;
-const asaTable = document.getElementById('asa') as HTMLTableElement;
 
 const totalInput = document.getElementById('total') as HTMLInputElement;
 const decimalsInput = document.getElementById('decimals') as HTMLInputElement;
 const nameInput = document.getElementById('name') as HTMLInputElement;
 const unitName = document.getElementById('unit') as HTMLInputElement;
 
-const buttonIds = ['connect', 'create'];
+const buttonIds = ['connect', 'create', 'add', 'remove'];
 const buttons: { [key: string]: HTMLButtonElement } = {};
 const pera = new PeraSession();
 
-Array(60).fill(null).forEach(() => {
+function addBoxField() {
   const row = metadataTable.insertRow();
   const keyCell = row.insertCell();
   const valueCell = row.insertCell();
 
   keyCell.innerHTML = '<input type="text" class="key">';
   valueCell.innerHTML = '<input type="text" class="value">';
+}
+
+Array(4).fill(null).forEach(() => {
+  addBoxField();
 });
 
 function getAccount(): string {
@@ -33,6 +38,20 @@ function getAccount(): string {
 buttonIds.forEach((id) => {
   buttons[id] = document.getElementById(id) as HTMLButtonElement;
 });
+
+buttons.add.onclick = () => {
+  if (metadataTable.rows.length === 60) {
+    // eslint-disable-next-line no-alert
+    alert('You can only have 60 metadata fields');
+    return;
+  }
+
+  addBoxField();
+};
+
+buttons.remove.onclick = () => {
+  if (metadataTable.rows.length > 1) metadataTable.deleteRow(metadataTable.rows.length - 1);
+};
 
 buttons.connect.onclick = async () => {
   await pera.getAccounts();
