@@ -35,7 +35,7 @@ function calculateTotalCost() {
   + parseFloat(boxMbrCost.innerHTML)
   + parseFloat(asaMbrCost.innerHTML);
 
-  totalCost.innerHTML = total.toString();
+  totalCost.innerHTML = total.toFixed(6).toString();
 }
 
 function calculateMBRandFees() {
