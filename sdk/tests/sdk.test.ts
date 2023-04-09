@@ -6,7 +6,8 @@ import { expect } from 'chai';
 import algosdk, { TransactionSigner } from 'algosdk';
 import { Buffer } from 'buffer';
 import {
-  createApp, createAsset, createMetadataEntries, getMetadataField, createAssetWithExtraMetadata,
+  createApp, createAsset, createMetadataEntries,
+  getMetadataField, createAssetWithExtraMetadata, getBoxName,
 } from '../src/index';
 
 const ARC_STRING = 'ARCXXXX';
@@ -117,7 +118,9 @@ describe('SDK', function () {
 
     const boxes = await getBoxes(appId);
 
-    expect(Object.keys(boxes).sort()).to.deep.equal(Object.keys(metadata).map((k) => `${ARC_STRING}${k}`).sort());
+    expect(Object.keys(boxes).sort()).to.deep.equal(
+      Object.keys(metadata).map((k) => Buffer.from(getBoxName(assetID, k)).toString()).sort(),
+    );
     expect(Object.values(boxes).sort()).to.deep.equal(Object.values(metadata).sort());
   });
 
@@ -130,7 +133,7 @@ describe('SDK', function () {
   it('createAssetWithExtraMetadata', async function () {
     const jsonData = JSON.stringify({ foo: 'bar', hello: 'world' });
 
-    const { appID } = await createAssetWithExtraMetadata(
+    const result = await createAssetWithExtraMetadata(
       sender,
       signer,
       algodClient,
@@ -140,15 +143,15 @@ describe('SDK', function () {
       },
     );
 
-    const boxes = await getBoxes(appID);
-    expect(boxes).to.deep.equal({ [`${ARC_STRING}JSON`]: jsonData });
+    const boxes = await getBoxes(result.appID);
+    expect(boxes).to.deep.equal({ [Buffer.from(getBoxName(result.assetID, 'JSON')).toString()]: jsonData });
   });
 
   it('60 properties', async function () {
     const metadata: Record<string, string> = {};
     Array.from(Array(60).keys()).forEach((n) => { metadata[n.toString()] = `value ${n}`; });
 
-    const { appID } = await createAssetWithExtraMetadata(
+    const result = await createAssetWithExtraMetadata(
       sender,
       signer,
       algodClient,
@@ -156,9 +159,13 @@ describe('SDK', function () {
       metadata,
     );
 
-    const boxes = await getBoxes(appID);
+    const boxes = await getBoxes(result.appID);
 
-    expect(Object.keys(boxes).sort()).to.deep.equal(Object.keys(metadata).map((k) => `${ARC_STRING}${k}`).sort());
+    expect(Object.keys(boxes).sort()).to.deep.equal(
+      Object.keys(metadata).map(
+        (k) => Buffer.from(getBoxName(result.assetID, k)).toString(),
+      ).sort(),
+    );
     expect(Object.values(boxes).sort()).to.deep.equal(Object.values(metadata).sort());
   });
 });

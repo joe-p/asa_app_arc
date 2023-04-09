@@ -9,21 +9,18 @@ class TokenMetadata extends Contract {
 
   asa = new GlobalReference<Asset>();
 
-  private verifyOrSetASA(asa: Asset): void {
-    if (this.asa.exists()) {
-      assert(this.asa.get() === asa);
-    } else {
-      assert(this.txn.sender === this.app.creator);
-      this.asa.put(asa);
-    }
+  private getKey(asa: Asset, key: bytes): bytes {
+    return ARC_STRING + itob(asa) + key;
+  }
 
-    assert(this.txn.sender === this.asa.get().manager);
+  private auth(asa: Asset): void {
+    assert(this.txn.sender === asa.manager);
   }
 
   private updateMetadataEntry(key: bytes, value: bytes, asa: Asset): void {
-    this.verifyOrSetASA(asa);
+    this.auth(asa);
 
-    this.metadataEntry.put(ARC_STRING + key, value);
+    this.metadataEntry.put(this.getKey(asa, key), value);
   }
 
   updateMetadataEntries(
@@ -31,7 +28,7 @@ class TokenMetadata extends Contract {
     values: StaticArray<string, typeof MAX_ITERATIONS>,
     asa: Asset,
   ): void {
-    this.verifyOrSetASA(asa);
+    this.auth(asa);
 
     for (let i = 0; i < MAX_ITERATIONS; i = i + 1) {
       if (values[i] === '') return;
@@ -40,19 +37,8 @@ class TokenMetadata extends Contract {
   }
 
   deleteMetadataEntry(key: bytes, asa: Asset): void {
-    this.verifyOrSetASA(asa);
+    this.auth(asa);
 
-    this.metadataEntry.delete(ARC_STRING + key);
-  }
-
-  reclaimALGOs(asa: Asset): void {
-    this.verifyOrSetASA(asa);
-
-    sendPayment({
-      sender: this.app.address,
-      receiver: asa.manager,
-      amount: this.app.address.balance - this.app.address.minBalance,
-      fee: 0,
-    });
+    this.metadataEntry.delete(this.getKey(asa, key));
   }
 }

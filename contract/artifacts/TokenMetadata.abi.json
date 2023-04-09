@@ -46,21 +46,6 @@
         "type": "void",
         "desc": ""
       }
-    },
-    {
-      "name": "reclaimALGOs",
-      "args": [
-        {
-          "name": "asa",
-          "type": "asset",
-          "desc": ""
-        }
-      ],
-      "desc": "",
-      "returns": {
-        "type": "void",
-        "desc": ""
-      }
     }
   ]
 }

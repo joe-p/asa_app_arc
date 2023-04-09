@@ -21,6 +21,11 @@ type CreateFields = {
     freeze?: string
 }
 
+export function getBoxName(assetID: number, key: string) {
+  const arcBytes = new Uint8Array(Buffer.from(ARC_STRING));
+  return new Uint8Array([...arcBytes, ...algosdk.encodeUint64(assetID), ...Buffer.from(key)]);
+}
+
 export async function createApp(
   algodClient: algosdk.Algodv2,
   sender: string,
@@ -100,7 +105,7 @@ export async function createMetadataEntries(
 
   // eslint-disable-next-line no-restricted-syntax
   for (const [key, value] of Object.entries(extraMetadata)) {
-    totalSize += key.length + value.length + ARC_STRING.length;
+    totalSize += key.length + value.length + ARC_STRING.length + 8;
   }
 
   const appFundTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
@@ -121,15 +126,10 @@ export async function createMetadataEntries(
       keys[i] = k;
     });
 
-    const boxes: algosdk.BoxReference[] = keysChunk.map((k) => {
-      const nameString = ARC_STRING + k;
-      const name = new Uint8Array(Buffer.from(nameString, 'utf-8'));
-
-      return {
-        name,
-        appIndex: appId,
-      };
-    });
+    const boxes: algosdk.BoxReference[] = keysChunk.map((k) => ({
+      name: getBoxName(assetID, k),
+      appIndex: appId,
+    }));
 
     atc.addMethodCall({
       appID: appId,
@@ -170,7 +170,7 @@ export async function getMetadataField(
 
   const { value } = await algodClient.getApplicationBoxByName(
     appID,
-    new Uint8Array(Buffer.from(ARC_STRING + field)),
+    getBoxName(assetId, field),
   ).do();
 
   return Buffer.from(value).toString();
