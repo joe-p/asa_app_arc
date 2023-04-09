@@ -35,7 +35,7 @@ function calculateTotalCost() {
   + parseFloat(boxMbrCost.innerHTML)
   + parseFloat(asaMbrCost.innerHTML);
 
-  totalCost.innerHTML = total.toFixed(6).toString();
+  totalCost.innerHTML = total.toFixed(4).toString();
 }
 
 function calculateMBRandFees() {
@@ -46,11 +46,11 @@ function calculateMBRandFees() {
 
   const boxMbr = BOX_CREATE_COST * keys.filter((k) => k > 0).length + BOX_BYTE_COST * totalSize;
 
-  boxMbrCost.innerHTML = boxMbr.toString();
+  boxMbrCost.innerHTML = boxMbr.toFixed(4).toString();
 
   const totalFee = Math.ceil(keys.filter((k) => k > 0).length / 4) * 0.001;
 
-  fees.innerHTML = (0.0020 + totalFee).toString();
+  fees.innerHTML = (0.0020 + totalFee).toFixed(4).toString();
 
   calculateTotalCost();
 }
