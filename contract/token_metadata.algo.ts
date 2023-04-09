@@ -1,6 +1,7 @@
 import { Contract } from '@algorandfoundation/tealscript/src/lib/index';
 
 const ARC_STRING = 'ARCXXXX';
+const MAX_ITERATIONS = 4;
 
 // eslint-disable-next-line no-unused-vars
 class TokenMetadata extends Contract {
@@ -24,10 +25,10 @@ class TokenMetadata extends Contract {
     this.metadataEntry.put(concat(ARC_STRING, key), value);
   }
 
-  updateMetadataEntries(keys: StaticArray<string, 4>, values: StaticArray<string, 4>, asa: Asset): void {
+  updateMetadataEntries(keys: StaticArray<string, typeof MAX_ITERATIONS>, values: StaticArray<string, typeof MAX_ITERATIONS>, asa: Asset): void {
     this.verifyOrSetASA(asa);
     
-    for (let i = 0; i < 4; i = i + 1) {
+    for (let i = 0; i < MAX_ITERATIONS; i = i + 1) {
       if (values[i] === '') return
       this.updateMetadataEntry(keys[i], values[i], asa);
     }

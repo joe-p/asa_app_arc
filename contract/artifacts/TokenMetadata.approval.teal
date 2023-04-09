@@ -23,7 +23,7 @@ verifyOrSetASA:
 	proto 1 0
 
 	// if0_condition
-	// token_metadata.algo.ts:11
+	// token_metadata.algo.ts:12
 	// this.asa.exists()
 	txna Applications 0
 	byte "asa"
@@ -33,7 +33,7 @@ verifyOrSetASA:
 	bz if0_else
 
 	// if0_consequent
-	// token_metadata.algo.ts:12
+	// token_metadata.algo.ts:13
 	// assert(this.asa.get() === asa)
 	byte "asa"
 	app_global_get
@@ -43,7 +43,7 @@ verifyOrSetASA:
 	b if0_end
 
 if0_else:
-	// token_metadata.algo.ts:14
+	// token_metadata.algo.ts:15
 	// assert(this.txn.sender === this.app.creator)
 	txn Sender
 	txna Applications 0
@@ -52,14 +52,14 @@ if0_else:
 	==
 	assert
 
-	// token_metadata.algo.ts:15
+	// token_metadata.algo.ts:16
 	// this.asa.put(asa)
 	byte "asa"
 	frame_dig -1 // asa: asset
 	app_global_put
 
 if0_end:
-	// token_metadata.algo.ts:18
+	// token_metadata.algo.ts:19
 	// assert(this.txn.sender === this.asa.get().manager)
 	txn Sender
 	byte "asa"
@@ -73,14 +73,14 @@ if0_end:
 updateMetadataEntry:
 	proto 3 0
 
-	// token_metadata.algo.ts:22
+	// token_metadata.algo.ts:23
 	// this.verifyOrSetASA(asa)
 	byte 0x
 	pop
 	frame_dig -3 // asa: asset
 	callsub verifyOrSetASA
 
-	// token_metadata.algo.ts:24
+	// token_metadata.algo.ts:25
 	// this.metadataEntry.put(concat(ARC_STRING, key), value)
 	byte "ARCXXXX"
 	frame_dig -1 // key: bytes
@@ -115,14 +115,14 @@ abi_route_updateMetadataEntries:
 updateMetadataEntries:
 	proto 4 0
 
-	// token_metadata.algo.ts:28
+	// token_metadata.algo.ts:29
 	// this.verifyOrSetASA(asa)
 	byte 0x
 	pop
 	frame_dig -3 // asa: asset
 	callsub verifyOrSetASA
 
-	// token_metadata.algo.ts:30
+	// token_metadata.algo.ts:31
 	// i = 0
 	int 0
 	frame_bury -4 // i: uint64
@@ -134,7 +134,7 @@ for_0:
 	bz for_0_end
 
 	// if1_condition
-	// token_metadata.algo.ts:31
+	// token_metadata.algo.ts:32
 	// values[i] === ''
 	frame_dig -2 // values: bytes[4]
 	int 1 // type length
@@ -152,12 +152,12 @@ for_0:
 	bz if1_end
 
 	// if1_consequent
-	// token_metadata.algo.ts:31
+	// token_metadata.algo.ts:32
 	// return
 	retsub
 
 if1_end:
-	// token_metadata.algo.ts:32
+	// token_metadata.algo.ts:33
 	// this.updateMetadataEntry(keys[i], values[i], asa)
 	byte 0x
 	pop
@@ -186,7 +186,7 @@ if1_end:
 	extract 2 0 // extract bytes from string
 	callsub updateMetadataEntry
 
-	// token_metadata.algo.ts:30
+	// token_metadata.algo.ts:31
 	// i = i + 1
 	frame_dig -4 // i: uint64
 	int 1
@@ -220,14 +220,14 @@ abi_route_deleteMetadataEntry:
 deleteMetadataEntry:
 	proto 2 0
 
-	// token_metadata.algo.ts:37
+	// token_metadata.algo.ts:38
 	// this.verifyOrSetASA(asa)
 	byte 0x
 	pop
 	frame_dig -2 // asa: asset
 	callsub verifyOrSetASA
 
-	// token_metadata.algo.ts:39
+	// token_metadata.algo.ts:40
 	// this.metadataEntry.delete(concat(ARC_STRING, key))
 	byte "ARCXXXX"
 	frame_dig -1 // key: bytes
@@ -256,34 +256,34 @@ abi_route_reclaimALGOs:
 reclaimALGOs:
 	proto 1 0
 
-	// token_metadata.algo.ts:43
+	// token_metadata.algo.ts:44
 	// this.verifyOrSetASA(asa)
 	byte 0x
 	pop
 	frame_dig -1 // asa: asset
 	callsub verifyOrSetASA
 
-	// token_metadata.algo.ts:45
+	// token_metadata.algo.ts:46
 	// sendPayment({
 	itxn_begin
 	int pay
 	itxn_field TypeEnum
 
-	// token_metadata.algo.ts:46
+	// token_metadata.algo.ts:47
 	// sender: this.app.address
 	txna Applications 0
 	app_params_get AppAddress
 	assert
 	itxn_field Sender
 
-	// token_metadata.algo.ts:47
+	// token_metadata.algo.ts:48
 	// receiver: asa.manager
 	frame_dig -1 // asa: asset
 	asset_params_get AssetManager
 	assert
 	itxn_field Receiver
 
-	// token_metadata.algo.ts:48
+	// token_metadata.algo.ts:49
 	// amount: this.app.address.balance - this.app.address.minBalance
 	txna Applications 0
 	app_params_get AppAddress
@@ -298,7 +298,7 @@ reclaimALGOs:
 	-
 	itxn_field Amount
 
-	// token_metadata.algo.ts:49
+	// token_metadata.algo.ts:50
 	// fee: 0
 	int 0
 	itxn_field Fee
