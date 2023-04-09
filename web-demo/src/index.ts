@@ -2,8 +2,11 @@
 /* eslint-disable import/no-unresolved */
 /* eslint-disable import/extensions */
 import algosdk from 'algosdk';
-import { createApp, createAsset, createMetadataEntries } from 'sdk/src/index';
+import { createAsset, createMetadataEntries } from 'sdk/src/index';
 import PeraSession from './wallets/pera';
+
+const TESTNET_APP = 180675275;
+const ARC_STRING = 'ARCXXXX';
 
 const algodClient = new algosdk.Algodv2('', 'https://testnet-api.algonode.cloud', '');
 
@@ -15,9 +18,8 @@ const decimalsInput = document.getElementById('decimals') as HTMLInputElement;
 const nameInput = document.getElementById('name') as HTMLInputElement;
 const unitName = document.getElementById('unit') as HTMLInputElement;
 
-const totalCost = document.getElementById('total') as HTMLElement;
+const totalCost = document.getElementById('total-cost') as HTMLElement;
 const boxMbrCost = document.getElementById('box-mbr') as HTMLElement;
-const appMbrCost = document.getElementById('app-mbr') as HTMLElement;
 const asaMbrCost = document.getElementById('asa-mbr') as HTMLElement;
 const fees = document.getElementById('fees') as HTMLElement;
 
@@ -31,14 +33,13 @@ const pera = new PeraSession();
 function calculateTotalCost() {
   const total = parseFloat(fees.innerHTML)
   + parseFloat(boxMbrCost.innerHTML)
-  + parseFloat(appMbrCost.innerHTML)
   + parseFloat(asaMbrCost.innerHTML);
 
   totalCost.innerHTML = total.toString();
 }
 
 function calculateMBRandFees() {
-  const keys = Array.from(metadataTable.querySelectorAll('.key')).map((i: HTMLInputElement) => i.value.length);
+  const keys = Array.from(metadataTable.querySelectorAll('.key')).map((i: HTMLInputElement) => i.value.length + ARC_STRING.length + 8);
   const values = Array.from(metadataTable.querySelectorAll('.value')).map((i: HTMLInputElement) => i.value.length);
 
   const totalSize = keys.reduce((a, b) => a + b, 0) + values.reduce((a, b) => a + b, 0);
@@ -72,7 +73,9 @@ async function getBoxes(app: number): Promise<Record<string, string>> {
 
   const boxPromises = boxes.map(async (b) => {
     const box = await algodClient.getApplicationBoxByName(app, b.name).do();
-    boxObject[Buffer.from(b.name).toString()] = Buffer.from(box.value).toString();
+    boxObject[
+      Buffer.from(b.name).toString().substring(ARC_STRING.length + 8)
+    ] = Buffer.from(box.value).toString();
   });
 
   await Promise.all(boxPromises);
@@ -139,17 +142,11 @@ buttons.create.onclick = async () => {
 
   const sender = getAccount();
 
-  alert('There will be a total of three transaction groups to sign. This first one creates the application that will hold the box metadata');
+  alert('There will be a total of two transaction groups to sign.\n1. Asset creation\n2. Metadata creation');
 
-  const appID = await createApp(algodClient, sender, signer);
+  const assetID = await createAsset(sender, signer, algodClient, TESTNET_APP, createFields);
 
-  alert('This second transaction group creates the asset');
+  await createMetadataEntries(sender, signer, TESTNET_APP, algodClient, assetID, metadata);
 
-  const assetID = await createAsset(sender, signer, algodClient, appID, createFields);
-
-  alert('This third transaction group creates the metadata entries');
-
-  await createMetadataEntries(sender, signer, appID, algodClient, assetID, metadata);
-
-  console.log(await getBoxes(appID));
+  console.log(await getBoxes(TESTNET_APP));
 };
