@@ -5,16 +5,17 @@
 import { expect } from 'chai';
 import algosdk, { TransactionSigner } from 'algosdk';
 import { Buffer } from 'buffer';
+import minterAppSpec from 'contract/artifacts/Minter.json';
 import {
   createApp, createAsset, createMetadataEntries,
-  getMetadataField, createAssetWithExtraMetadata, getBoxName,
+  getMetadataField, createAssetWithExtraMetadata, getBoxName, callMinter,
 } from '../src/index';
 
 const ARC_STRING = 'ARCXXXX';
 
 let sender: string;
 let signer: TransactionSigner;
-let appId: number;
+let metadataAppId: number;
 let assetID: number;
 let createFields: {
   total: number
@@ -97,12 +98,12 @@ describe('SDK', function () {
   });
 
   it('createApp', async function () {
-    appId = await createApp(algodClient, sender, signer);
-    expect(appId).to.be.greaterThan(0);
+    metadataAppId = await createApp(algodClient, sender, signer);
+    expect(metadataAppId).to.be.greaterThan(0);
   });
 
   it('createAsset', async function () {
-    assetID = await createAsset(sender, signer, algodClient, appId, createFields);
+    assetID = await createAsset(sender, signer, algodClient, metadataAppId, createFields);
     expect(assetID).to.be.greaterThan(0);
   });
 
@@ -114,9 +115,9 @@ describe('SDK', function () {
       four: 'key four',
     };
 
-    await createMetadataEntries(sender, signer, appId, algodClient, assetID, metadata);
+    await createMetadataEntries(sender, signer, metadataAppId, algodClient, assetID, metadata);
 
-    const boxes = await getBoxes(appId);
+    const boxes = await getBoxes(metadataAppId);
 
     expect(Object.keys(boxes).sort()).to.deep.equal(
       Object.keys(metadata).map((k) => Buffer.from(getBoxName(assetID, k)).toString()).sort(),
@@ -167,5 +168,60 @@ describe('SDK', function () {
       ).sort(),
     );
     expect(Object.values(boxes).sort()).to.deep.equal(Object.values(metadata).sort());
+  });
+
+  it('callMinter', async function () {
+    const atc = new algosdk.AtomicTransactionComposer();
+
+    const compiledApproval = await algodClient.compile(Buffer.from(minterAppSpec.source.approval, 'base64')).do();
+    const compiledClear = await algodClient.compile(Buffer.from(minterAppSpec.source.clear, 'base64')).do();
+
+    const createMinterApp = algosdk.makeApplicationCreateTxnFromObject({
+      suggestedParams: await algodClient.getTransactionParams().do(),
+      from: sender,
+      onComplete: algosdk.OnApplicationComplete.NoOpOC,
+      approvalProgram: new Uint8Array(Buffer.from(compiledApproval.result, 'base64')),
+      clearProgram: new Uint8Array(Buffer.from(compiledClear.result, 'base64')),
+      numGlobalByteSlices: 0,
+      numGlobalInts: 0,
+      numLocalByteSlices: 0,
+      numLocalInts: 0,
+    });
+
+    atc.addTransaction({ txn: createMinterApp, signer });
+
+    const results = await atc.execute(algodClient, 3);
+
+    const minterApp = (await algodClient.pendingTransactionInformation(results.txIDs[0]).do())['application-index'];
+
+    const fundMinterAppTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+      from: sender,
+      to: algosdk.getApplicationAddress(minterApp),
+      amount: 200_000,
+      suggestedParams: await algodClient.getTransactionParams().do(),
+    });
+
+    const fundATC = new algosdk.AtomicTransactionComposer();
+
+    fundATC.addTransaction({ txn: fundMinterAppTxn, signer });
+
+    fundATC.execute(algodClient, 3);
+
+    const mintIDs = await callMinter(
+      sender,
+      signer,
+      algodClient,
+      createFields,
+      {
+        a: 'aa',
+        b: 'bb',
+        c: 'cc',
+        d: 'dd',
+      },
+      minterApp,
+      metadataAppId,
+    );
+
+    const boxes = await getBoxes(mintIDs.appID);
   });
 });

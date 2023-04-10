@@ -1,11 +1,16 @@
 import algosdk, { AtomicTransactionComposer } from 'algosdk';
 import { Buffer } from 'buffer';
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import appSpec from 'contract/artifacts/TokenMetadata.json';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import minterAppSpec from 'contract/artifacts/Minter.json';
 
 const ARC_STRING = 'ARCXXXX';
 const BOX_CREATE_COST = 0.0025e6;
 const BOX_BYTE_COST = 0.0004e6;
 const CONTRACT = new algosdk.ABIContract(appSpec.contract);
+const MINTER_CONTRACT = new algosdk.ABIContract(minterAppSpec.contract);
 
 type CreateFields = {
     total: number | bigint
@@ -174,4 +179,82 @@ export async function getMetadataField(
   ).do();
 
   return Buffer.from(value).toString();
+}
+
+export async function callMinter(
+  sender: string,
+  signer: algosdk.TransactionSigner,
+  algodClient: algosdk.Algodv2,
+  fields: CreateFields,
+  extraMetadata: Record<string, string>,
+  minterApp: number,
+  metadataApp: number,
+): Promise<{appID: number, assetID: number}> {
+  const tempATC = new AtomicTransactionComposer();
+  const suggestedParams = await algodClient.getTransactionParams().do();
+
+  tempATC.addMethodCall({
+    sender,
+    signer,
+    suggestedParams: { ...suggestedParams, fee: 2 * algosdk.ALGORAND_MIN_TX_FEE, flatFee: true },
+    appID: minterApp,
+    method: algosdk.getMethodByName(MINTER_CONTRACT.methods, 'mint'),
+    methodArgs: [
+      fields.total,
+      fields.decimals,
+      fields.unitName || '',
+      fields.assetName || '',
+      fields.clawback || 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ',
+      fields.reserve || 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ',
+      fields.freeze || 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ',
+      fields.defaultFrozen ? 1 : 0,
+      metadataApp,
+    ],
+  });
+
+  tempATC.addMethodCall({
+    sender,
+    signer,
+    suggestedParams: { ...suggestedParams, fee: 2 * algosdk.ALGORAND_MIN_TX_FEE, flatFee: true },
+    appID: minterApp,
+    method: algosdk.getMethodByName(MINTER_CONTRACT.methods, 'addMetadata'),
+    methodArgs: [
+      { txn: tempATC.clone().buildGroup().at(-1)!.txn, signer },
+      Object.keys(extraMetadata),
+      Object.values(extraMetadata),
+    ],
+  });
+
+  const lastTxn = tempATC.clone().buildGroup().at(-1)!.txn;
+
+  lastTxn.group = undefined;
+
+  tempATC.addMethodCall({
+    sender,
+    signer,
+    suggestedParams,
+    appID: minterApp,
+    method: algosdk.getMethodByName(MINTER_CONTRACT.methods, 'setManager'),
+    methodArgs: [
+      fields.manager || 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ',
+      { txn: lastTxn, signer },
+    ],
+  });
+
+  const atc = new AtomicTransactionComposer();
+  const txids: string[] = [];
+  tempATC.buildGroup().forEach((t) => {
+    const { txn } = t;
+    if (txids.includes(txn.txID())) return;
+    txids.push(txn.txID());
+
+    txn.group = undefined;
+    atc.addTransaction({ txn, signer });
+  });
+
+  const results = await atc.execute(algodClient, 3);
+
+  const appID = results.methodResults[0].returnValue?.valueOf() as number;
+
+  return { assetID: results.methodResults[1].returnValue?.valueOf() as number, appID };
 }

@@ -53,7 +53,7 @@ class Minter extends Contract {
     assetName: string,
     clawback: Address,
     reserve: Address,
-    frozen: Address,
+    freeze: Address,
     defaultFrozen: uint64,
     app: Application,
   ): Asset {
@@ -67,7 +67,7 @@ class Minter extends Contract {
       configAssetName: assetName,
       configAssetClawback: clawback,
       configAssetReserve: reserve,
-      configAssetFreeze: frozen,
+      configAssetFreeze: freeze,
       configAssetDefaultFrozen: defaultFrozen,
     });
 
