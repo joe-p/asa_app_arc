@@ -1,0 +1,106 @@
+{
+  "name": "Minter",
+  "desc": "",
+  "methods": [
+    {
+      "name": "mint",
+      "args": [
+        {
+          "name": "total",
+          "type": "uint64",
+          "desc": ""
+        },
+        {
+          "name": "decimals",
+          "type": "uint64",
+          "desc": ""
+        },
+        {
+          "name": "unitName",
+          "type": "string",
+          "desc": ""
+        },
+        {
+          "name": "assetName",
+          "type": "string",
+          "desc": ""
+        },
+        {
+          "name": "clawback",
+          "type": "address",
+          "desc": ""
+        },
+        {
+          "name": "reserve",
+          "type": "address",
+          "desc": ""
+        },
+        {
+          "name": "frozen",
+          "type": "address",
+          "desc": ""
+        },
+        {
+          "name": "defaultFrozen",
+          "type": "uint64",
+          "desc": ""
+        },
+        {
+          "name": "app",
+          "type": "application",
+          "desc": ""
+        }
+      ],
+      "desc": "",
+      "returns": {
+        "type": "uint64",
+        "desc": ""
+      }
+    },
+    {
+      "name": "addMetadata",
+      "args": [
+        {
+          "name": "appCall",
+          "type": "appl",
+          "desc": ""
+        },
+        {
+          "name": "keys",
+          "type": "string[4]",
+          "desc": ""
+        },
+        {
+          "name": "values",
+          "type": "string[4]",
+          "desc": ""
+        }
+      ],
+      "desc": "",
+      "returns": {
+        "type": "uint64",
+        "desc": ""
+      }
+    },
+    {
+      "name": "setManager",
+      "args": [
+        {
+          "name": "manager",
+          "type": "address",
+          "desc": ""
+        },
+        {
+          "name": "appCall",
+          "type": "appl",
+          "desc": ""
+        }
+      ],
+      "desc": "",
+      "returns": {
+        "type": "void",
+        "desc": ""
+      }
+    }
+  ]
+}

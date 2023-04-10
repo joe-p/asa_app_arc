@@ -1,0 +1,288 @@
+#pragma version 8
+	b main
+
+abi_route_mint:
+	txn OnCompletion
+	int NoOp
+	==
+	txn ApplicationID
+	int 0
+	!=
+	&&
+	assert
+	byte 0x
+	dupn 1
+	txna ApplicationArgs 9
+	btoi
+	txnas Applications
+	txna ApplicationArgs 8
+	btoi
+	txna ApplicationArgs 7
+	txna ApplicationArgs 6
+	txna ApplicationArgs 5
+	txna ApplicationArgs 4
+	extract 2 0
+	txna ApplicationArgs 3
+	extract 2 0
+	txna ApplicationArgs 2
+	btoi
+	txna ApplicationArgs 1
+	btoi
+	callsub mint
+	int 1
+	return
+
+mint:
+	proto 11 0
+
+	// token_metadata.algo.ts:60
+	// asa = sendAssetCreation({
+	itxn_begin
+	int acfg
+	itxn_field TypeEnum
+
+	// token_metadata.algo.ts:61
+	// fee: 0
+	int 0
+	itxn_field Fee
+
+	// token_metadata.algo.ts:62
+	// configAssetURL: itob(app)
+	frame_dig -9 // app: application
+	itob
+	itxn_field ConfigAssetURL
+
+	// token_metadata.algo.ts:63
+	// configAssetTotal: total
+	frame_dig -1 // total: uint64
+	itxn_field ConfigAssetTotal
+
+	// token_metadata.algo.ts:64
+	// configAssetDecimals: decimals
+	frame_dig -2 // decimals: uint64
+	itxn_field ConfigAssetDecimals
+
+	// token_metadata.algo.ts:65
+	// configAssetManager: this.app.address
+	txna Applications 0
+	app_params_get AppAddress
+	assert
+	itxn_field ConfigAssetManager
+
+	// token_metadata.algo.ts:66
+	// configAssetUnitName: unitName
+	frame_dig -3 // unitName: bytes
+	itxn_field ConfigAssetUnitName
+
+	// token_metadata.algo.ts:67
+	// configAssetName: assetName
+	frame_dig -4 // assetName: bytes
+	itxn_field ConfigAssetName
+
+	// token_metadata.algo.ts:68
+	// configAssetClawback: clawback
+	frame_dig -5 // clawback: address
+	itxn_field ConfigAssetClawback
+
+	// token_metadata.algo.ts:69
+	// configAssetReserve: reserve
+	frame_dig -6 // reserve: address
+	itxn_field ConfigAssetReserve
+
+	// token_metadata.algo.ts:70
+	// configAssetFreeze: frozen
+	frame_dig -7 // frozen: address
+	itxn_field ConfigAssetFreeze
+
+	// token_metadata.algo.ts:71
+	// configAssetDefaultFrozen: defaultFrozen
+	frame_dig -8 // defaultFrozen: uint64
+	itxn_field ConfigAssetDefaultFrozen
+	itxn_submit
+	itxn CreatedAssetID
+	frame_bury -10 // asa: asset
+
+	// token_metadata.algo.ts:74
+	// lastTxn = this.txnGroup[globals.groupSize - 1]
+	global GroupSize
+	int 1
+	-
+	frame_bury -11 // lastTxn: txn
+
+	// token_metadata.algo.ts:76
+	// assert(lastTxn.applicationID === this.app)
+	frame_dig -11 // lastTxn: txn
+	gtxns ApplicationID
+	txna Applications 0
+	==
+	assert
+
+	// token_metadata.algo.ts:77
+	// assert(lastTxn.applicationArgs[0] === method('setManager(address,appl)void'))
+	frame_dig -11 // lastTxn: txn
+	gtxns ApplicationArgs 0
+	method "setManager(address,appl)void"
+	==
+	assert
+
+	// token_metadata.algo.ts:79
+	// return asa;
+	frame_dig -10 // asa: asset
+	itob
+	byte 0x151f7c75
+	swap
+	concat
+	log
+	retsub
+
+abi_route_addMetadata:
+	txn OnCompletion
+	int NoOp
+	==
+	txn ApplicationID
+	int 0
+	!=
+	&&
+	assert
+	byte 0x
+	dupn 0
+	txna ApplicationArgs 2
+	txna ApplicationArgs 1
+	callsub addMetadata
+	int 1
+	return
+
+addMetadata:
+	proto 4 0
+
+	// token_metadata.algo.ts:87
+	// assert(appCall.applicationID === this.app)
+	frame_dig -1 // appCall: appl
+	gtxns ApplicationID
+	txna Applications 0
+	==
+	assert
+
+	// token_metadata.algo.ts:88
+	// asa = Asset.fromIndex(btoi(extract3(appCall.lastLog, 4, 8)))
+	frame_dig -1 // appCall: appl
+	gtxns LastLog
+	int 4
+	int 8
+	extract3
+	btoi
+	frame_bury -4 // asa: asset
+
+	// token_metadata.algo.ts:90
+	// sendMethodCall<[METADATA_ENTRY, METADATA_ENTRY, Asset], void>({
+	itxn_begin
+	int appl
+	itxn_field TypeEnum
+	method "updateMetadataEntries(string[4],string[4],asset)void"
+	itxn_field ApplicationArgs
+
+	// token_metadata.algo.ts:91
+	// fee: 0
+	int 0
+	itxn_field Fee
+
+	// token_metadata.algo.ts:93
+	// methodArgs: [keys, values, asa]
+	frame_dig -2 // keys: bytes[4]
+	itxn_field ApplicationArgs
+	frame_dig -3 // values: bytes[4]
+	itxn_field ApplicationArgs
+	frame_dig -4 // asa: asset
+	itxn_field Assets
+	int 0
+	itob
+	itxn_field ApplicationArgs
+
+	// token_metadata.algo.ts:94
+	// onCompletion: 'NoOp'
+	int NoOp
+	itxn_field OnCompletion
+	itxn_submit
+
+	// token_metadata.algo.ts:97
+	// return asa;
+	frame_dig -4 // asa: asset
+	itob
+	byte 0x151f7c75
+	swap
+	concat
+	log
+	retsub
+
+abi_route_setManager:
+	txn OnCompletion
+	int NoOp
+	==
+	txn ApplicationID
+	int 0
+	!=
+	&&
+	assert
+	byte 0x
+	dupn 0
+	txna ApplicationArgs 1
+	callsub setManager
+	int 1
+	return
+
+setManager:
+	proto 3 0
+
+	// token_metadata.algo.ts:101
+	// asa = Asset.fromIndex(btoi(extract3(appCall.lastLog, 4, 8)))
+	frame_dig -2 // appCall: appl
+	gtxns LastLog
+	int 4
+	int 8
+	extract3
+	btoi
+	frame_bury -3 // asa: asset
+
+	// token_metadata.algo.ts:103
+	// sendAssetConfig({
+	itxn_begin
+	int acfg
+	itxn_field TypeEnum
+
+	// token_metadata.algo.ts:104
+	// fee: 0
+	int 0
+	itxn_field Fee
+
+	// token_metadata.algo.ts:105
+	// configAsset: asa
+	frame_dig -3 // asa: asset
+	itxn_field ConfigAsset
+
+	// token_metadata.algo.ts:106
+	// configAssetManager: manager
+	frame_dig -1 // manager: address
+	itxn_field ConfigAssetManager
+	itxn_submit
+	retsub
+
+main:
+	txn NumAppArgs
+	bnz route_abi
+
+	// default createApplication
+	txn ApplicationID
+	int 0
+	==
+	txn OnCompletion
+	int NoOp
+	==
+	&&
+	return
+
+route_abi:
+	method "mint(uint64,uint64,string,string,address,address,address,uint64,application)uint64"
+	method "addMetadata(appl,string[4],string[4])uint64"
+	method "setManager(address,appl)void"
+	txna ApplicationArgs 0
+	match abi_route_mint abi_route_addMetadata abi_route_setManager

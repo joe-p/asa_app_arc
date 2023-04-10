@@ -2,6 +2,8 @@ import { Contract } from '@algorandfoundation/tealscript/src/lib/index';
 
 const ARC_STRING = 'ARCXXXX';
 const MAX_ITERATIONS = 4;
+const TESTNET_APP = 180675275;
+type METADATA_ENTRY = StaticArray<string, typeof MAX_ITERATIONS>
 
 // eslint-disable-next-line no-unused-vars
 class TokenMetadata extends Contract {
@@ -24,8 +26,8 @@ class TokenMetadata extends Contract {
   }
 
   updateMetadataEntries(
-    keys: StaticArray<string, typeof MAX_ITERATIONS>,
-    values: StaticArray<string, typeof MAX_ITERATIONS>,
+    keys: METADATA_ENTRY,
+    values: METADATA_ENTRY,
     asa: Asset,
   ): void {
     this.auth(asa);
@@ -40,5 +42,68 @@ class TokenMetadata extends Contract {
     this.auth(asa);
 
     this.metadataEntry.delete(this.getKey(asa, key));
+  }
+}
+
+class Minter extends Contract {
+  mint(
+    total: uint64,
+    decimals: uint64,
+    unitName: string,
+    assetName: string,
+    clawback: Address,
+    reserve: Address,
+    frozen: Address,
+    defaultFrozen: uint64,
+    app: Application,
+  ): Asset {
+    const asa = sendAssetCreation({
+      fee: 0,
+      configAssetURL: itob(app),
+      configAssetTotal: total,
+      configAssetDecimals: decimals,
+      configAssetManager: this.app.address,
+      configAssetUnitName: unitName,
+      configAssetName: assetName,
+      configAssetClawback: clawback,
+      configAssetReserve: reserve,
+      configAssetFreeze: frozen,
+      configAssetDefaultFrozen: defaultFrozen,
+    });
+
+    const lastTxn = this.txnGroup[globals.groupSize - 1];
+
+    assert(lastTxn.applicationID === this.app);
+    assert(lastTxn.applicationArgs[0] === method('setManager(address,appl)void'));
+
+    return asa;
+  }
+
+  addMetadata(
+    appCall: AppCallTxn,
+    keys: METADATA_ENTRY,
+    values: METADATA_ENTRY,
+  ): Asset {
+    assert(appCall.applicationID === this.app);
+    const asa = Asset.fromIndex(btoi(extract3(appCall.lastLog, 4, 8)));
+
+    sendMethodCall<[METADATA_ENTRY, METADATA_ENTRY, Asset], void>({
+      fee: 0,
+      name: 'updateMetadataEntries',
+      methodArgs: [keys, values, asa],
+      onCompletion: 'NoOp',
+    });
+
+    return asa;
+  }
+
+  setManager(manager: Address, appCall: AppCallTxn): void {
+    const asa = Asset.fromIndex(btoi(extract3(appCall.lastLog, 4, 8)));
+
+    sendAssetConfig({
+      fee: 0,
+      configAsset: asa,
+      configAssetManager: manager,
+    });
   }
 }
